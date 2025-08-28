@@ -35,11 +35,12 @@ C     VARIABLE DECLARATIONS
       INTEGER   IYR
 
       LOGICAL   DEBUG,LDCAY,LMERCH
-      INTEGER   I,JROUT,DBSKODE
+      INTEGER   I,JROUT,DBSKODE,CRWNRTO
       INTEGER   JS
       REAL      VT, X, H, D
       REAL      V(11)
       REAL      ABIO, MBIO, RBIO
+      CHARACTER LIVEDEAD
 
 C     CHECK FOR DEBUG.
 
@@ -121,8 +122,11 @@ C       "MERCH" VOLUME AS COMMERCIALLY USEFUL, SO LMERCH IS .TRUE.
           H = HT(I)
           X = -1.0
           LMERCH = .FALSE.
+          CRWNRTO = ICR(I)
+          LIVEDEAD='L'
           IF (LVWEST) LMERCH = .TRUE.
-          CALL FMSVL2(JS,D,H,X,VT,LMERCH,DEBUG,JOSTND)
+          CALL FMSVL2(JS,D,H,X,VT,CRWNRTO,
+     &                LIVEDEAD,LMERCH,DEBUG,JOSTND)
           V(2) = V(2) + FMPROB(I) * VT * V2T(JS)
         ENDIF
       ENDDO
