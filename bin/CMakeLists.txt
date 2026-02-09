@@ -5,7 +5,7 @@
 ## command-line:
 # cmake -G"Visual Studio 10 Win64" .
 
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.10)
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio 10")
   set (CMAKE_C_FLAGS   "/D_WINDOWS /W3 /Zm100" CACHE STRING "VS10 mod A" FORCE)
@@ -70,7 +70,7 @@ return()
 ##DO NOT REMOVE THIS TAG##
 
 ##If edits are made, make them in the CMakeList.txt file in the parent directory.
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.10)
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio 10")
   set (CMAKE_C_FLAGS   "/D_WINDOWS /W3 /Zm100" CACHE STRING "VS10 mod A" FORCE)
@@ -90,6 +90,10 @@ project (FVS C CXX Fortran)
 set (CMAKE_Fortran_Format FIXED)
 set (CMAKE_VERBOSE_MAKEFILE ON)
 
+if (CMAKE_GENERATOR MATCHES "Unix Makefiles")
+  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -std=legacy")
+endif()
+
 file(GLOB sourceList FVS*_sourceList.txt)
 get_filename_component (slfn ${sourceList} NAME CACHE)
 string(REPLACE "_sourceList.txt" "" prgName ${slfn})
@@ -101,7 +105,7 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio 10")
   elseif (CMAKE_GENERATOR MATCHES "MinGW Makefiles")
   add_definitions(-DANSI -DWINDOWS -D_WINDLL -DCMPgcc)
   elseif (CMAKE_GENERATOR MATCHES "Unix Makefiles")
-  add_definitions(-DANSI -DCMPgcc) 
+  add_definitions(-DANSI -DCMPgcc -Dunix)
 else()
 endif()
 
@@ -120,7 +124,7 @@ foreach (fn ${fileList})
   get_filename_component (pname   ${fn} PATH CACHE)
   get_filename_component (extname ${fn} EXT  CACHE)
 
-  if (${extname} STREQUAL ".h" OR ${extname} STREQUAL ".F77")
+  if (${extname} STREQUAL ".h" OR ${extname} STREQUAL ".F77" OR ${extname} STREQUAL ".inc")
     list (APPEND includeDirs  ${pname})
   endif()
 
@@ -145,7 +149,33 @@ endforeach(fn)
 list (REMOVE_DUPLICATES includeDirs)
 list (APPEND includeDirs ${CMAKE_CURRENT_BINARY_DIR})
 
-include_directories(BEFORE ${includeDirs})
+# Separate variant-specific include dirs from generic ones.
+# Variant dirs must be searched first to pick up variant-specific
+# .F77 includes (e.g., ESCOMN.F77, PRGPRM.F77).
+# CMake sorts include_directories alphabetically, so we build the
+# -I flags manually via CMAKE_<LANG>_FLAGS for correct ordering.
+set(variantIncludes)
+set(otherIncludes)
+foreach(idir ${includeDirs})
+  string(REGEX MATCH "/${varName}/" isVariantDir "${idir}")
+  if(isVariantDir)
+    list(APPEND variantIncludes ${idir})
+  else()
+    list(APPEND otherIncludes ${idir})
+  endif()
+endforeach()
+set(ALL_INCLUDE_FLAGS "")
+foreach(vdir ${variantIncludes})
+  get_filename_component(vdir_abs ${vdir} ABSOLUTE)
+  set(ALL_INCLUDE_FLAGS "${ALL_INCLUDE_FLAGS} -I${vdir_abs}")
+endforeach()
+foreach(odir ${otherIncludes})
+  get_filename_component(odir_abs ${odir} ABSOLUTE)
+  set(ALL_INCLUDE_FLAGS "${ALL_INCLUDE_FLAGS} -I${odir_abs}")
+endforeach()
+set(CMAKE_Fortran_FLAGS "${ALL_INCLUDE_FLAGS} ${CMAKE_Fortran_FLAGS}")
+set(CMAKE_C_FLAGS "${ALL_INCLUDE_FLAGS} ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "${ALL_INCLUDE_FLAGS} ${CMAKE_CXX_FLAGS}")
 
 message(STATUS "includeDirs= ${includeDirs}")
 message(STATUS "CsourceSQL= ${CsourceSQL}")
@@ -155,10 +185,16 @@ message(STATUS "FsourceMAIN= ${FsourceMAIN}")
 
 message(STATUS "FVSvariant = FVS${varName}")
 
-add_library(FVSsql SHARED ${CsourceSQL})
-add_library(FVSfofem SHARED ${CsourceFFE})
+if (CMAKE_GENERATOR MATCHES "Unix Makefiles")
+  add_library(FVSsql STATIC ${CsourceSQL})
+  add_library(FVSfofem STATIC ${CsourceFFE})
+  add_library(FVS_${varName} STATIC ${FsourceFVS})
+else()
+  add_library(FVSsql SHARED ${CsourceSQL})
+  add_library(FVSfofem SHARED ${CsourceFFE})
+  add_library(FVS_${varName} SHARED ${FsourceFVS})
+endif()
 #add_library(FVScfim SHARED ${CsourceCFIM})  ### delete this line permanently
-add_library(FVS_${varName} SHARED ${FsourceFVS})
 add_executable (${prgName} ${FsourceMAIN})
 
 target_link_libraries(${prgName} FVS_${varName} FVSsql FVSfofem )

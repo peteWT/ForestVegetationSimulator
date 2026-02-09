@@ -528,7 +528,7 @@ double CalcSpreadRate(double *Fuel, double *Moisture, double WindSpeed,
      if(ndead>0)
           ndead=3;
 
-	double nclas[2]={ndead,nlive};  // # of dead & live fuel classes
+	double nclas[2]={(double)ndead,(double)nlive};  // # of dead & live fuel classes
 
    double load[3][2]=			// tons per acre, later converted to lb/ft2
 	{	{Fuel[0], Fuel[3]},

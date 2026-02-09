@@ -292,6 +292,7 @@
 ../metric/vdbsqlite/dbsfmpf.f
 ../metric/vdbsqlite/dbsstandin.f
 ../metric/vdbsqlite/dbssumry.f
+../vdbsqlite/dbsreference.f
 
 ../metric/dbsqlite/dbsatrtls.f
 ../metric/dbsqlite/dbsclsum.f
@@ -337,6 +338,10 @@
 ../dbsqlite/dbsprssql.f
 ../dbsqlite/dbssiteprep.f
 ../dbsqlite/dbstreesin.f
+../volume/NVEL/wdbkwtdata.inc
+../dbsqlite/dbs_fiavbc_atrtls.f
+../dbsqlite/dbs_fiavbc_cutlst.f
+../dbsqlite/dbs_fiavbc_trls.f
 ../dbsqlite/uuidgen.f
 ../dbsqlite/fvsqlite3.c
 ../dbsqlite/sqlite3.c
