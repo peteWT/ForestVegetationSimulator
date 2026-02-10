@@ -1,0 +1,5 @@
+# CMake build artifacts
+bin/CMakeCache.txt
+bin/CMakeFiles/
+bin/cmake_install.cmake
+bin/FVS*_CmakeDir/
